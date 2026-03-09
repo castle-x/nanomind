@@ -1,0 +1,203 @@
+# gve api generate 修复指南
+
+> 日期：2026-03-05
+> 复现项目：nanomind（Go + Vite + Embed，PocketBase 集成）
+> gve 版本：v9a4a319-dirty (9a4a319) 2026-03-05T13:21:14Z
+>
+> **状态：✅ 已修复**（gve v7f070f7-dirty, 2026-03-06）
+> - BUG-1：不再生成 thrift 序列化代码，改为纯 Go struct + JSON tag
+> - BUG-2：HTTP client 已改名为 `{Service}HTTPClient`，消除命名冲突
+
+## 概述
+
+`gve api generate` 生成的 Go 代码存在两个编译阻断性问题，导致生成产物无法通过 `go build`。
+
+> **以下内容为历史记录，两个 bug 均已在 gve v7f070f7 中修复。**
+
+---
+
+## BUG-1：thriftgo 生成代码与 apache/thrift 库 API 不兼容
+
+### 现象
+
+```
+internal/api/nanomind/auth/v1/auth.go:53:14:
+    not enough arguments in call to iprot.ReadStructBegin
+        have ()
+        want (context.Context)
+
+internal/api/nanomind/auth/v1/auth.go:58:34:
+    not enough arguments in call to iprot.ReadFieldBegin
+        have ()
+        want (context.Context)
+
+internal/api/nanomind/auth/v1/auth.go:72:31:
+    not enough arguments in call to iprot.Skip
+        have (thrift.TType)
+        want (context.Context, thrift.TType)
+```
+
+（auth、file、search 三个资源的 `.go` 文件均报同类错误。）
+
+### 根因
+
+gve 内置的 **thriftgo v0.4.3** 生成的代码使用旧版 `TProtocol` 接口：
+
+```go
+// thriftgo 0.4.3 生成的代码（旧 API）
+_, err = iprot.ReadStructBegin()
+_, fieldTypeId, fieldId, err = iprot.ReadFieldBegin()
+err = iprot.Skip(fieldTypeId)
+err = iprot.ReadFieldEnd()
+err = iprot.ReadStructEnd()
+v, err := iprot.ReadI64()
+v, err := iprot.ReadString()
+v, err := iprot.ReadBool()
+```
+
+但项目 `go.mod` 中的 **`github.com/apache/thrift v0.14.2`** 的 `TProtocol` 接口已在所有 Read/Write/Skip 方法上添加了 `context.Context` 参数：
+
+```go
+// apache/thrift v0.14.2 的 TProtocol 接口（新 API）
+ReadStructBegin(ctx context.Context) (string, error)
+ReadFieldBegin(ctx context.Context) (string, thrift.TType, int16, error)
+Skip(ctx context.Context, fieldType thrift.TType) error
+ReadFieldEnd(ctx context.Context) error
+ReadStructEnd(ctx context.Context) error
+ReadI64(ctx context.Context) (int64, error)
+ReadString(ctx context.Context) (string, error)
+ReadBool(ctx context.Context) (bool, error)
+```
+
+### 影响范围
+
+所有由 thriftgo 生成的 `{resource}.go` 文件：
+- `internal/api/nanomind/auth/v1/auth.go`（2479 行）
+- `internal/api/nanomind/file/v1/file.go`（3301 行）
+- `internal/api/nanomind/search/v1/search.go`（701 行）
+
+这些文件包含的所有 `Read()`、`Write()` 方法调用都缺少 `ctx` 参数。
+
+### 修复方案
+
+**方案 A（推荐）：升级 thriftgo 版本**
+
+将 gve 内嵌的 thriftgo 升级到兼容 `apache/thrift v0.14.x` 的版本。较新版本的 thriftgo 会在生成代码中正确传递 `context.Context`。
+
+验证方式：用新版 thriftgo 手动生成一次，确认输出代码中 `Read`/`Write` 方法带 `ctx` 参数。
+
+**方案 B：降级项目 thrift 库**
+
+如果不想升级 thriftgo，可以在 gve 文档中注明推荐的 `apache/thrift` 版本，但这会限制用户选择，不推荐。
+
+---
+
+## BUG-2：thrift 生成的 ServiceClient 与 HTTP client 命名冲突
+
+### 现象
+
+```
+internal/api/nanomind/auth/v1/client.go:13:6:
+    AuthServiceClient redeclared in this block
+        internal/api/nanomind/auth/v1/auth.go:1134:6:
+            other declaration of AuthServiceClient
+
+internal/api/nanomind/auth/v1/client.go:18:6:
+    NewAuthServiceClient redeclared in this block
+
+internal/api/nanomind/auth/v1/client.go:25:29:
+    method AuthServiceClient.GetCurrentUser already declared
+```
+
+（file、search 同理。）
+
+### 根因
+
+`gve api generate` 向同一个 Go package 中输出了两个文件，但二者定义了同名类型：
+
+| 文件 | 类型名 | 作用 |
+|------|--------|------|
+| `auth.go`（thriftgo 生成） | `AuthServiceClient` | Thrift 二进制协议客户端（基于 `thrift.TClient`） |
+| `client.go`（gve 生成） | `AuthServiceClient` | HTTP/JSON 客户端（基于 `net/http`） |
+
+两个 `AuthServiceClient` 在同一 package `auth` 下冲突，同名的 `NewAuthServiceClient` 和所有方法也冲突。
+
+### 影响范围
+
+所有资源都会冲突：
+- `auth/v1/`：`AuthServiceClient` 重复声明
+- `file/v1/`：`FileServiceClient` 重复声明
+- `search/v1/`：`SearchServiceClient` 重复声明
+
+### 修复方案
+
+**方案 A（推荐）：HTTP client 使用不同命名**
+
+将 `client.go` 中的类型名改为 `{Service}HTTPClient`，避免与 thrift 生成代码冲突：
+
+```go
+// client.go — gve 生成的 HTTP 客户端
+type AuthServiceHTTPClient struct {  // 改名，不与 thrift 的 AuthServiceClient 冲突
+    baseURL string
+    http    *http.Client
+}
+
+func NewAuthServiceHTTPClient(baseURL string, httpClient *http.Client) *AuthServiceHTTPClient {
+    // ...
+}
+```
+
+这也是早期 gve 版本实际使用的命名（见 nanomind 项目 `api/nanomind/auth/v1/client.go` 的历史版本中使用的就是 `AuthServiceHTTPClient`）。
+
+**方案 B：拆分到不同 package**
+
+将 HTTP client 输出到子 package（如 `internal/api/nanomind/auth/v1/httpclient/`），但这会增加 import 路径深度，不够简洁。
+
+**方案 C：只生成 HTTP client，不生成 thrift 协议客户端**
+
+在 thriftgo 生成时使用 `-gen go:skip_client` 类似选项（如果 thriftgo 支持），只生成 struct 定义和 service interface，不生成 `AuthServiceClient`。这样命名空间留给 gve 的 HTTP client。
+
+---
+
+## 复现步骤
+
+```bash
+# 1. 确认 gve 版本
+gve version
+# gve v9a4a319-dirty (9a4a319) 2026-03-05T13:21:14Z
+
+# 2. 确认项目 thrift 依赖
+grep apache/thrift go.mod
+# github.com/apache/thrift v0.14.2
+
+# 3. 确保 api/ 下有 thrift 文件
+ls api/nanomind/*/v1/*.thrift
+# api/nanomind/auth/v1/auth.thrift
+# api/nanomind/file/v1/file.thrift
+# api/nanomind/search/v1/search.thrift
+
+# 4. 生成代码
+gve api generate
+# ✓ Generated API artifacts for 3 thrift file(s)
+
+# 5. 尝试编译 — 失败
+go build ./internal/api/...
+# 报错：not enough arguments / redeclared
+```
+
+## 预期行为
+
+`gve api generate` 生成的代码应在不添加 build tag、不手动修改的情况下直接通过 `go build`。
+
+## 临时 workaround
+
+在 gve 修复之前，项目可以给 thrift 类型文件添加 build tag 隔离：
+
+```go
+//go:build gve_api
+
+// Code generated by thriftgo. DO NOT EDIT.
+package auth
+```
+
+这样只有 `client.go`（纯标准库依赖）参与正常编译。代价是丢失了 thrift struct 类型定义的编译时检查。

@@ -1,0 +1,11 @@
+{
+  "version": "1",
+  "ui": {
+    "registry": "https://github.com/castle-x/wk-ui.git",
+    "assets": {}
+  },
+  "api": {
+    "registry": "https://github.com/castle-x/wk-api.git",
+    "assets": {}
+  }
+}

@@ -1,0 +1,357 @@
+@import "tailwindcss";
+@import "./themes.css";
+@import "./editor.css";
+@import "./docs.css";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+
+@custom-variant dark (&:is(.dark *));
+
+/* ============================================
+   Base styles
+   ============================================ */
+
+@layer base {
+  * {
+    border-color: hsl(var(--border));
+    @apply border-border outline-ring/50;
+  }
+
+  body {
+    background-color: hsl(var(--background));
+    color: hsl(var(--foreground));
+    font-family: "Inter", ui-sans-serif, system-ui, -apple-system, sans-serif;
+    @apply bg-background text-foreground;
+  }
+
+  html {
+    font-size: 100%;
+  }
+}
+
+/* ============================================
+   Tailwind theme extension via CSS variables
+   ============================================ */
+@theme {
+  --color-background: hsl(var(--background));
+  --color-foreground: hsl(var(--foreground));
+  --color-card: hsl(var(--card));
+  --color-card-foreground: hsl(var(--card-foreground));
+  --color-popover: hsl(var(--popover));
+  --color-popover-foreground: hsl(var(--popover-foreground));
+  --color-primary: hsl(var(--primary));
+  --color-primary-foreground: hsl(var(--primary-foreground));
+  --color-secondary: hsl(var(--secondary));
+  --color-secondary-foreground: hsl(var(--secondary-foreground));
+  --color-muted: hsl(var(--muted));
+  --color-muted-foreground: hsl(var(--muted-foreground));
+  --color-accent: hsl(var(--accent));
+  --color-accent-foreground: hsl(var(--accent-foreground));
+  --color-destructive: hsl(var(--destructive));
+  --color-destructive-foreground: hsl(var(--destructive-foreground));
+  --color-border: hsl(var(--border));
+  --color-input: hsl(var(--input));
+  --color-ring: hsl(var(--ring));
+  --color-sidebar: hsl(var(--sidebar));
+
+  --radius-lg: var(--radius);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-sm: calc(var(--radius) - 4px);
+}
+
+/* ============================================
+   Scrollbar styling
+   ============================================ */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: hsl(var(--border));
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: hsl(var(--muted-foreground));
+}
+
+/* ============================================
+   Animations for Shadcn UI components
+   ============================================ */
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes fade-out {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
+@keyframes zoom-in-95 {
+  from {
+    transform: scale(0.95);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+@keyframes zoom-out-95 {
+  from {
+    transform: scale(1);
+    opacity: 1;
+  }
+  to {
+    transform: scale(0.95);
+    opacity: 0;
+  }
+}
+
+@keyframes slide-in-from-top {
+  from {
+    transform: translateY(-100%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+
+@keyframes slide-in-from-bottom {
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+
+@keyframes slide-in-from-left {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+
+@keyframes slide-in-from-right {
+  from {
+    transform: translateX(100%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+
+/* Shadcn animation utilities */
+.animate-in {
+  animation: fade-in 0.15s ease-out;
+}
+
+.animate-out {
+  animation: fade-out 0.15s ease-out;
+}
+
+.fade-in-0 {
+  animation: fade-in 0.15s ease-out;
+}
+
+.fade-out-0 {
+  animation: fade-out 0.15s ease-out;
+}
+
+.zoom-in-95 {
+  animation: zoom-in-95 0.15s ease-out;
+}
+
+.zoom-out-95 {
+  animation: zoom-out-95 0.15s ease-out;
+}
+
+.slide-in-from-top-2 {
+  animation: slide-in-from-top 0.15s ease-out;
+}
+
+.slide-in-from-bottom-2 {
+  animation: slide-in-from-bottom 0.15s ease-out;
+}
+
+.slide-in-from-left-2 {
+  animation: slide-in-from-left 0.15s ease-out;
+}
+
+.slide-in-from-right-2 {
+  animation: slide-in-from-right 0.15s ease-out;
+}
+
+@theme inline {
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --radius-2xl: calc(var(--radius) + 8px);
+}
+
+.docs-prose {
+  color: hsl(var(--foreground));
+}
+
+.docs-prose > * + * {
+  margin-top: 1rem;
+}
+
+.docs-prose h1,
+.docs-prose h2,
+.docs-prose h3 {
+  scroll-margin-top: 6rem;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+}
+
+.docs-prose h2 {
+  margin-top: 2.5rem;
+  font-size: 1.5rem;
+}
+
+.docs-prose h3 {
+  margin-top: 2rem;
+  font-size: 1.125rem;
+}
+
+.docs-prose p,
+.docs-prose li {
+  line-height: 1.8;
+}
+
+.docs-prose ul,
+.docs-prose ol {
+  padding-left: 1.5rem;
+}
+
+.docs-prose a {
+  color: hsl(var(--primary));
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
+}
+
+.docs-prose pre {
+  overflow-x: auto;
+  border: 1px solid hsl(var(--border));
+  border-radius: 0.75rem;
+  background: hsl(var(--card));
+  padding: 1rem;
+}
+
+.docs-prose code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+}
+
+.docs-prose blockquote {
+  border-left: 3px solid hsl(var(--border));
+  padding-left: 1rem;
+  color: hsl(var(--muted-foreground));
+}
+
+.docs-lead {
+  max-width: 48rem;
+  font-size: 1.125rem;
+  line-height: 1.8;
+  color: hsl(var(--muted-foreground));
+}
+
+.docs-prose {
+  color: hsl(var(--foreground));
+}
+
+.docs-content > * + *,
+.docs-prose > * + * {
+  margin-top: 1rem;
+}
+
+.docs-content h1,
+.docs-content h2,
+.docs-content h3,
+.docs-prose h1,
+.docs-prose h2,
+.docs-prose h3 {
+  scroll-margin-top: 6rem;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+}
+
+.docs-content h2,
+.docs-prose h2 {
+  margin-top: 2.5rem;
+  font-size: 1.5rem;
+}
+
+.docs-content h3,
+.docs-prose h3 {
+  margin-top: 2rem;
+  font-size: 1.125rem;
+}
+
+.docs-content p,
+.docs-content li,
+.docs-prose p,
+.docs-prose li {
+  line-height: 1.8;
+}
+
+.docs-content ul,
+.docs-content ol,
+.docs-prose ul,
+.docs-prose ol {
+  padding-left: 1.5rem;
+}
+
+.docs-content a,
+.docs-prose a {
+  color: hsl(var(--primary));
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
+}
+
+.docs-content pre,
+.docs-prose pre {
+  overflow-x: auto;
+  border: 1px solid hsl(var(--border));
+  border-radius: 0.75rem;
+  background: hsl(var(--card));
+  padding: 1rem;
+}
+
+.docs-content code,
+.docs-prose code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+}
+
+.docs-content blockquote,
+.docs-prose blockquote {
+  border-left: 3px solid hsl(var(--border));
+  padding-left: 1rem;
+  color: hsl(var(--muted-foreground));
+}
+
+.docs-lead {
+  max-width: 48rem;
+  font-size: 1.125rem;
+  line-height: 1.8;
+  color: hsl(var(--muted-foreground));
+}

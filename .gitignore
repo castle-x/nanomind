@@ -1,0 +1,46 @@
+# Build outputs
+/bin/
+/site/dist/
+/app
+/server
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+*.test
+*.out
+
+# Local development runtime
+/.dev/
+/.pids/
+*.log
+*.pid
+
+# Frontend dependencies
+/node_modules/
+/site/node_modules/
+
+# Local tool artifacts (non-project)
+/.claude/
+/package.json
+/package-lock.json
+/reference/
+
+# GVE runtime
+/.gve/
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# IDE / editor
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS files
+.DS_Store
+Thumbs.db
