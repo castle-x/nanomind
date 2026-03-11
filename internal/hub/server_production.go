@@ -3,7 +3,7 @@
 package hub
 
 import (
-	gopb "github.com/castle-x/go-pocketbase"
+	gopb "github.com/castle-x/goutils/pocketbase"
 	"github.com/pocketbase/pocketbase/core"
 
 	"nanomind/site"

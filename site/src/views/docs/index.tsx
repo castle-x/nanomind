@@ -2,9 +2,9 @@ import { useQuery } from "@tanstack/react-query";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useParams } from "react-router";
 import { DocMarkdown, DocsShell } from "@/shared/docs";
-import { getDocsConfig, getDocsPage } from "@/shared/lib/docs-client";
+import { getDocsConfig, getDocsPage } from "@/shared/lib/api-client";
 import { buildDocsHref, extractDocsToc, findDocsPageContext } from "@/shared/lib/docs-utils";
-import type { DocsTocItem } from "@/shared/types";
+import type { TocItem } from "@/shared/types";
 import { Button } from "@/shared/ui/button";
 import { Surface } from "@/shared/ui/surface";
 
@@ -25,7 +25,7 @@ function EmptyState({ title, description, showHomeLink = false }: EmptyStateProp
             className="mt-6"
             asChild
           >
-            <Link to="/docs">返回文档首页</Link>
+            <Link to="/">返回文档首页</Link>
           </Button>
         ) : null}
       </Surface>
@@ -38,20 +38,22 @@ export function DocsView() {
   const articleRef = useRef<HTMLElement>(null);
   const [activeTocId, setActiveTocId] = useState<string | null>(null);
 
+  const spaceSlug = params.slug ?? "";
   const pageParam = params["*"]?.replace(/^\/+|\/+$/g, "") ?? "";
 
   const configQuery = useQuery({
-    queryKey: ["docs-config"],
-    queryFn: getDocsConfig,
+    queryKey: ["docs-config", spaceSlug],
+    queryFn: () => getDocsConfig(spaceSlug),
+    enabled: Boolean(spaceSlug),
     retry: false,
   });
 
   const currentPageId = pageParam || configQuery.data?.site.homepage || "";
 
   const pageQuery = useQuery({
-    queryKey: ["docs-page", currentPageId],
-    queryFn: () => getDocsPage(currentPageId),
-    enabled: Boolean(configQuery.data && currentPageId),
+    queryKey: ["docs-page", spaceSlug, currentPageId],
+    queryFn: () => getDocsPage(spaceSlug, currentPageId),
+    enabled: Boolean(spaceSlug && configQuery.data && currentPageId),
     retry: false,
   });
 
@@ -63,7 +65,7 @@ export function DocsView() {
     return findDocsPageContext(configQuery.data, currentPageId);
   }, [configQuery.data, currentPageId]);
 
-  const tocItems = useMemo<DocsTocItem[]>(() => {
+  const tocItems = useMemo<TocItem[]>(() => {
     if (!pageQuery.data || pageQuery.data.toc === false) {
       return [];
     }

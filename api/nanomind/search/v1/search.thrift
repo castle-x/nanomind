@@ -2,7 +2,8 @@ namespace go search
 namespace js search
 
 struct SearchRequest {
-  1: required string query
+  1: required string spaceId
+  2: required string query
 }
 
 struct SearchResult {

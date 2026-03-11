@@ -14,7 +14,6 @@ interface DocsShellState {
   contentMode: DocsContentMode;
   contentModeCustomized: boolean;
   leftSidebarWidth: number;
-  leftSidebarCollapsed: boolean;
   rightTocVisible: boolean;
   mobileSidebarOpen: boolean;
   isResizing: boolean;
@@ -22,8 +21,6 @@ interface DocsShellState {
   setContentMode: (mode: DocsContentMode) => void;
   toggleContentMode: () => void;
   setLeftSidebarWidth: (width: number) => void;
-  setLeftSidebarCollapsed: (collapsed: boolean) => void;
-  toggleLeftSidebar: () => void;
   setRightTocVisible: (visible: boolean) => void;
   toggleRightToc: () => void;
   setMobileSidebarOpen: (open: boolean) => void;
@@ -36,7 +33,6 @@ export const useDocsShell = create<DocsShellState>()(
       contentMode: "centered",
       contentModeCustomized: false,
       leftSidebarWidth: DOCS_SIDEBAR_DEFAULT_WIDTH,
-      leftSidebarCollapsed: false,
       rightTocVisible: true,
       mobileSidebarOpen: false,
       isResizing: false,
@@ -55,9 +51,6 @@ export const useDocsShell = create<DocsShellState>()(
         })),
       setLeftSidebarWidth: (leftSidebarWidth) =>
         set({ leftSidebarWidth: clampSidebarWidth(leftSidebarWidth) }),
-      setLeftSidebarCollapsed: (leftSidebarCollapsed) => set({ leftSidebarCollapsed }),
-      toggleLeftSidebar: () =>
-        set((state) => ({ leftSidebarCollapsed: !state.leftSidebarCollapsed })),
       setRightTocVisible: (rightTocVisible) => set({ rightTocVisible }),
       toggleRightToc: () => set((state) => ({ rightTocVisible: !state.rightTocVisible })),
       setMobileSidebarOpen: (mobileSidebarOpen) => set({ mobileSidebarOpen }),
@@ -70,7 +63,6 @@ export const useDocsShell = create<DocsShellState>()(
         contentMode: state.contentMode,
         contentModeCustomized: state.contentModeCustomized,
         leftSidebarWidth: state.leftSidebarWidth,
-        leftSidebarCollapsed: state.leftSidebarCollapsed,
         rightTocVisible: state.rightTocVisible,
       }),
     },

@@ -8,12 +8,18 @@ import (
 
 func (h *Hub) handleSearch(e *core.RequestEvent) error {
 	var req struct {
-		Query string `json:"query"`
+		SpaceID string `json:"spaceId"`
+		Query   string `json:"query"`
 	}
-	if err := e.BindBody(&req); err != nil {
-		return e.JSON(http.StatusBadRequest, map[string]string{"error": "invalid request"})
+	if err := e.BindBody(&req); err != nil || req.SpaceID == "" {
+		return e.JSON(http.StatusBadRequest, map[string]string{"error": "spaceId required"})
 	}
 
-	results := h.fileService.Search(req.Query)
+	fs, err := h.fileServiceForSpace(req.SpaceID)
+	if err != nil {
+		return e.JSON(http.StatusNotFound, map[string]string{"error": err.Error()})
+	}
+
+	results := fs.Search(req.Query)
 	return e.JSON(http.StatusOK, results)
 }

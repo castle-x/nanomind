@@ -7,7 +7,19 @@ import (
 )
 
 func (h *Hub) handleGetDocsConfig(e *core.RequestEvent) error {
-	config, err := h.docsService.GetConfig()
+	var req struct {
+		SpaceSlug string `json:"spaceSlug"`
+	}
+	if err := e.BindBody(&req); err != nil || req.SpaceSlug == "" {
+		return e.JSON(http.StatusBadRequest, map[string]string{"error": "spaceSlug required"})
+	}
+
+	ds, err := h.docsServiceForSpace(req.SpaceSlug)
+	if err != nil {
+		return e.JSON(http.StatusNotFound, map[string]string{"error": err.Error()})
+	}
+
+	config, err := ds.GetConfig()
 	if err != nil {
 		return e.JSON(http.StatusNotFound, map[string]string{"error": err.Error()})
 	}
@@ -16,13 +28,19 @@ func (h *Hub) handleGetDocsConfig(e *core.RequestEvent) error {
 
 func (h *Hub) handleGetDocsPage(e *core.RequestEvent) error {
 	var req struct {
-		ID string `json:"id"`
+		SpaceSlug string `json:"spaceSlug"`
+		ID        string `json:"id"`
 	}
-	if err := e.BindBody(&req); err != nil || req.ID == "" {
-		return e.JSON(http.StatusBadRequest, map[string]string{"error": "id required"})
+	if err := e.BindBody(&req); err != nil || req.SpaceSlug == "" || req.ID == "" {
+		return e.JSON(http.StatusBadRequest, map[string]string{"error": "spaceSlug and id required"})
 	}
 
-	page, err := h.docsService.GetPage(req.ID)
+	ds, err := h.docsServiceForSpace(req.SpaceSlug)
+	if err != nil {
+		return e.JSON(http.StatusNotFound, map[string]string{"error": err.Error()})
+	}
+
+	page, err := ds.GetPage(req.ID)
 	if err != nil {
 		status := http.StatusBadRequest
 		if err.Error() == "page not found" || err.Error() == "invalid page id" {

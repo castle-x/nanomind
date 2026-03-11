@@ -24,7 +24,7 @@ export interface TocItem {
   id: string;
   text: string;
   level: number;
-  index: number;
+  index?: number;
 }
 
 export type ThemeKey = "A" | "B" | "C";
@@ -105,8 +105,13 @@ export interface DocsPageContext {
   page: DocsPageRef | null;
 }
 
-export interface DocsTocItem {
+export interface Space {
   id: string;
-  text: string;
-  level: number;
+  name: string;
+  slug: string;
+  description: string;
+  public: boolean;
+  isDefault: boolean;
+  customDomain: string;
+  path: string;
 }

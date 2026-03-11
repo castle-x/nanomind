@@ -2,29 +2,24 @@ import { List } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { cn, slugifyHeading } from "@/shared/lib/utils";
 import type { TocItem } from "@/shared/types";
-import { useAppStore } from "@/views/editor/model/editor-store";
+import { useDashboardStore } from "@/views/dashboard/model/dashboard-store";
 
-interface TableOfContentsProps {
+interface Props {
   scrollContainerRef: React.RefObject<HTMLDivElement | null>;
 }
 
-/** Get all h1-h3 headings from the container */
 function queryHeadings(container: HTMLElement | null): NodeListOf<HTMLHeadingElement> | [] {
   if (!container) return [];
   return container.querySelectorAll<HTMLHeadingElement>("h1, h2, h3");
 }
 
-export function TableOfContents({ scrollContainerRef }: TableOfContentsProps) {
+export function OnPageNav({ scrollContainerRef }: Props) {
   const [items, setItems] = useState<TocItem[]>([]);
   const [activeId, setActiveId] = useState<string | null>(null);
 
-  const currentPath = useAppStore((s) => s.currentPath);
-  const content = useAppStore((s) => s.content);
+  const currentPath = useDashboardStore((s) => s.currentPath);
+  const content = useDashboardStore((s) => s.content);
 
-  /**
-   * Extract headings from the editor DOM.
-   * Does NOT modify the DOM — avoids infinite loops with ProseMirror.
-   */
   const extractHeadings = useCallback(() => {
     const headings = queryHeadings(scrollContainerRef.current);
     const tocItems: TocItem[] = [];
@@ -46,28 +41,23 @@ export function TableOfContents({ scrollContainerRef }: TableOfContentsProps) {
     setItems(tocItems);
   }, [scrollContainerRef]);
 
-  // Clear items when no file is open
   useEffect(() => {
     if (!currentPath) setItems([]);
   }, [currentPath]);
 
-  // Re-extract headings on file switch (with delay for editor to render)
   useEffect(() => {
     if (!currentPath) return;
     const timer = setTimeout(extractHeadings, 200);
     return () => clearTimeout(timer);
   }, [currentPath, extractHeadings]);
 
-  // Re-extract when content changes (editor updates, 500ms debounce)
   useEffect(() => {
     if (!currentPath) return;
-
     void content;
     const timer = setTimeout(extractHeadings, 500);
     return () => clearTimeout(timer);
   }, [content, currentPath, extractHeadings]);
 
-  // Scroll tracking — highlight current heading by index lookup
   useEffect(() => {
     const container = scrollContainerRef.current;
     if (!container || items.length === 0) return;
@@ -95,13 +85,14 @@ export function TableOfContents({ scrollContainerRef }: TableOfContentsProps) {
     return () => container.removeEventListener("scroll", handleScroll);
   }, [scrollContainerRef, items]);
 
-  /** Click to scroll — find heading by index at click time */
   const handleClick = (index: number) => {
     const el = queryHeadings(scrollContainerRef.current)[index];
     if (el) {
       el.scrollIntoView({ behavior: "smooth", block: "start" });
     }
   };
+
+  if (!currentPath) return null;
 
   const indent: Record<number, string> = {
     1: "pl-3",
@@ -110,14 +101,14 @@ export function TableOfContents({ scrollContainerRef }: TableOfContentsProps) {
   };
 
   return (
-    <aside className="hidden xl:block w-48 border-l border-border p-4 overflow-y-auto shrink-0">
-      <div className="flex items-center gap-1.5 text-[11px] font-medium uppercase tracking-wider text-muted-foreground/60 mb-3">
-        <List className="w-3 h-3" />
-        On this page
+    <aside className="hidden w-48 shrink-0 overflow-y-auto border-l border-border p-4 xl:block">
+      <div className="mb-3 flex items-center gap-1.5 text-[11px] font-medium uppercase tracking-wider text-muted-foreground/60">
+        <List className="h-3 w-3" />
+        目录
       </div>
 
       {items.length === 0 ? (
-        <p className="text-xs text-muted-foreground/40">—</p>
+        <p className="text-xs text-muted-foreground/40">&mdash;</p>
       ) : (
         <nav className="flex flex-col gap-0.5">
           {items.map((item) => (
@@ -126,10 +117,10 @@ export function TableOfContents({ scrollContainerRef }: TableOfContentsProps) {
               key={item.id}
               onClick={() => handleClick(item.index)}
               className={cn(
-                "text-left text-xs py-0.5 truncate transition-colors rounded",
+                "truncate rounded py-0.5 text-left text-xs transition-colors",
                 indent[item.level] || "pl-3",
                 activeId === item.id
-                  ? "text-primary font-medium"
+                  ? "font-medium text-primary"
                   : "text-muted-foreground/70 hover:text-foreground",
               )}
               title={item.text}

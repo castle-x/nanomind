@@ -1,22 +1,16 @@
-import { ChevronDown, ChevronRight, PanelLeftClose } from "lucide-react";
+import { ChevronDown, ChevronRight } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { NavLink } from "react-router";
 import { buildDocsHref } from "@/shared/lib/docs-utils";
 import { cn } from "@/shared/lib/utils";
 import type { DocsGroup } from "@/shared/types";
-import { ResizeHandle } from "@/shared/ui/resize-handle";
 
 interface Props {
   groups: DocsGroup[];
   currentPageId: string;
   homepage: string;
   width: number;
-  collapsed: boolean;
   mobileOpen: boolean;
-  isResizing?: boolean;
-  onResize: (width: number) => void;
-  onResizeActiveChange?: (active: boolean) => void;
-  onCollapse: (collapsed: boolean) => void;
   onCloseMobile: () => void;
 }
 
@@ -25,12 +19,7 @@ export function DocsSidebar({
   currentPageId,
   homepage,
   width,
-  collapsed,
   mobileOpen,
-  isResizing = false,
-  onResize,
-  onResizeActiveChange,
-  onCollapse,
   onCloseMobile,
 }: Props) {
   const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>({});
@@ -54,39 +43,8 @@ export function DocsSidebar({
     [groups],
   );
 
-  const startResize = (startClientX: number) => {
-    onResizeActiveChange?.(true);
-    const startWidth = width;
-
-    const handlePointerMove = (event: PointerEvent) => {
-      onResize(startWidth + event.clientX - startClientX);
-    };
-
-    const handlePointerUp = () => {
-      onResizeActiveChange?.(false);
-      window.removeEventListener("pointermove", handlePointerMove);
-    };
-
-    window.addEventListener("pointermove", handlePointerMove);
-    window.addEventListener("pointerup", handlePointerUp, { once: true });
-  };
-
   const sidebarContent = (
     <>
-      <div className="flex h-12 items-center justify-between border-b border-border/60 px-4">
-        <span className="text-[11px] font-semibold uppercase tracking-[0.2em] text-muted-foreground">
-          Documentation
-        </span>
-        <button
-          type="button"
-          className="inline-flex size-8 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
-          onClick={() => onCollapse(true)}
-          aria-label="折叠导航"
-        >
-          <PanelLeftClose className="size-4" />
-        </button>
-      </div>
-
       <div className="docs-shell-scroll flex-1 overflow-y-auto px-4 py-5">
         <div className="space-y-6">
           {visibleGroups.map((group) => {
@@ -142,39 +100,39 @@ export function DocsSidebar({
 
   return (
     <>
+      {/* Desktop Sidebar */}
       <aside
-        className={cn(
-          "hidden border-r border-border/60 bg-sidebar/35 lg:flex lg:flex-col",
-          collapsed && "lg:hidden",
-          isResizing && "select-none",
-        )}
+        className="sticky top-[6.25rem] hidden h-[calc(100vh-6.25rem)] shrink-0 flex-col border-r border-border/60 bg-background/72 backdrop-blur xl:flex"
         style={{ width }}
       >
         {sidebarContent}
       </aside>
 
-      {!collapsed ? (
-        <ResizeHandle
-          className="hidden lg:flex"
-          active={isResizing}
-          aria-label="调整导航宽度"
-          onPointerDown={(event) => startResize(event.clientX)}
+      {/* Mobile Sidebar */}
+      <div
+        className={cn(
+          "fixed inset-0 z-50 flex xl:hidden",
+          mobileOpen ? "pointer-events-auto" : "pointer-events-none",
+        )}
+      >
+        <button
+          type="button"
+          className={cn(
+            "absolute inset-0 bg-background/80 backdrop-blur-sm transition-opacity",
+            mobileOpen ? "opacity-100" : "opacity-0",
+          )}
+          onClick={onCloseMobile}
+          aria-label="关闭侧边栏"
         />
-      ) : null}
-
-      {mobileOpen ? (
-        <div className="fixed inset-0 z-50 lg:hidden">
-          <button
-            type="button"
-            className="absolute inset-0 bg-background/70 backdrop-blur-sm"
-            onClick={onCloseMobile}
-            aria-label="关闭导航"
-          />
-          <aside className="relative z-10 flex h-full w-[84vw] max-w-sm flex-col border-r border-border bg-background shadow-xl">
-            {sidebarContent}
-          </aside>
-        </div>
-      ) : null}
+        <aside
+          className={cn(
+            "relative flex h-full w-3/4 max-w-sm flex-col border-r border-border bg-background shadow-2xl transition-transform",
+            mobileOpen ? "translate-x-0" : "-translate-x-full",
+          )}
+        >
+          {sidebarContent}
+        </aside>
+      </div>
     </>
   );
 }

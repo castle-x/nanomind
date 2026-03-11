@@ -46,8 +46,13 @@ struct DocsConfigResponse {
   3: list<DocsTab> tabs
 }
 
+struct GetConfigRequest {
+  1: required string spaceSlug
+}
+
 struct GetPageRequest {
-  1: required string id
+  1: required string spaceSlug
+  2: required string id
 }
 
 struct DocsPageResponse {
@@ -61,6 +66,6 @@ struct DocsPageResponse {
 }
 
 service DocsService {
-  DocsConfigResponse GetConfig()
+  DocsConfigResponse GetConfig(1: GetConfigRequest req)
   DocsPageResponse GetPage(1: GetPageRequest req)
 }

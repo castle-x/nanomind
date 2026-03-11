@@ -51,5 +51,5 @@ func (h *Hub) handleChangePassword(e *core.RequestEvent) error {
 }
 
 func (h *Hub) handleGetAppInfo(e *core.RequestEvent) error {
-	return e.JSON(http.StatusOK, map[string]string{"mindPath": h.mindPath})
+	return e.JSON(http.StatusOK, map[string]string{"mindPath": h.mindBasePath})
 }

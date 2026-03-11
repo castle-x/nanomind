@@ -1,22 +1,15 @@
 import { parseDocsContent } from "@/shared/lib/docs-blocks";
+import { slugifyHeading } from "@/shared/lib/utils";
 import type {
   DocsConfig,
   DocsContentMode,
   DocsPageContext,
   DocsPageRef,
   DocsTab,
-  DocsTocItem,
+  TocItem,
 } from "@/shared/types";
 
-export function slugifyHeading(text: string): string {
-  return text
-    .toLowerCase()
-    .replace(/[<>]/g, "")
-    .replace(/[^\w\u4e00-\u9fff\s-]/g, "")
-    .replace(/\s+/g, "-")
-    .replace(/-+/g, "-")
-    .replace(/^-|-$/g, "");
-}
+export { slugifyHeading };
 
 export function createHeadingIdResolver() {
   const counts = new Map<string, number>();
@@ -32,8 +25,8 @@ export function createHeadingIdResolver() {
 function extractMarkdownToc(
   content: string,
   resolveHeadingId: (text: string) => string,
-): DocsTocItem[] {
-  const items: DocsTocItem[] = [];
+): TocItem[] {
+  const items: TocItem[] = [];
 
   for (const rawLine of content.split("\n")) {
     const line = rawLine.trim();
@@ -53,10 +46,10 @@ function extractMarkdownToc(
   return items;
 }
 
-export function extractDocsToc(content: string): DocsTocItem[] {
+export function extractDocsToc(content: string): TocItem[] {
   const resolveHeadingId = createHeadingIdResolver();
   const blocks = parseDocsContent(content);
-  const items: DocsTocItem[] = [];
+  const items: TocItem[] = [];
 
   for (const block of blocks) {
     if (block.type === "markdown") {
@@ -78,7 +71,7 @@ export function extractDocsToc(content: string): DocsTocItem[] {
 }
 
 export function buildDocsHref(pageId: string, homepage: string): string {
-  return pageId === homepage ? "/docs" : `/docs/${pageId}`;
+  return pageId === homepage ? "/" : `/${pageId}`;
 }
 
 export function findFirstPageId(tab: DocsTab | null | undefined): string | null {

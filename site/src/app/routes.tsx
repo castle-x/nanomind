@@ -1,8 +1,12 @@
+import { useQuery } from "@tanstack/react-query";
 import { lazy, type ReactNode, Suspense } from "react";
 import { createBrowserRouter, Navigate, type RouteObject } from "react-router";
 import { useAuth } from "@/shared/hooks/useAuth";
+import { getDefaultSpace } from "@/shared/lib/api-client";
 
-const EditorView = lazy(() => import("@/views/editor").then((m) => ({ default: m.EditorView })));
+const DashboardView = lazy(() =>
+  import("@/views/dashboard").then((m) => ({ default: m.DashboardView })),
+);
 const LoginView = lazy(() => import("@/views/auth").then((m) => ({ default: m.LoginView })));
 const DocsView = lazy(() => import("@/views/docs").then((m) => ({ default: m.DocsView })));
 
@@ -31,7 +35,7 @@ function PublicRoute({ children }: { children: ReactNode }) {
   if (isAuthenticated) {
     return (
       <Navigate
-        to="/"
+        to="/dashboard"
         replace
       />
     );
@@ -40,30 +44,50 @@ function PublicRoute({ children }: { children: ReactNode }) {
   return <Suspense fallback={<LoadingFallback />}>{children}</Suspense>;
 }
 
+function SmartRedirect() {
+  const isAuthenticated = useAuth((s) => s.isAuthenticated);
+
+  const { data: defaultSpace, isLoading } = useQuery({
+    queryKey: ["defaultSpace"],
+    queryFn: getDefaultSpace,
+    enabled: !isAuthenticated,
+    staleTime: 60_000,
+  });
+
+  if (isAuthenticated) {
+    return (
+      <Navigate
+        to="/dashboard"
+        replace
+      />
+    );
+  }
+
+  if (isLoading) {
+    return null;
+  }
+
+  if (defaultSpace?.slug) {
+    return (
+      <Navigate
+        to={`/${defaultSpace.slug}`}
+        replace
+      />
+    );
+  }
+
+  return (
+    <Navigate
+      to="/login"
+      replace
+    />
+  );
+}
+
 export const routes: RouteObject[] = [
   {
-    path: "/docs",
-    element: (
-      <Suspense fallback={<LoadingFallback />}>
-        <DocsView />
-      </Suspense>
-    ),
-  },
-  {
-    path: "/docs/*",
-    element: (
-      <Suspense fallback={<LoadingFallback />}>
-        <DocsView />
-      </Suspense>
-    ),
-  },
-  {
     path: "/",
-    element: (
-      <ProtectedRoute>
-        <EditorView />
-      </ProtectedRoute>
-    ),
+    element: <SmartRedirect />,
   },
   {
     path: "/login",
@@ -71,6 +95,38 @@ export const routes: RouteObject[] = [
       <PublicRoute>
         <LoginView />
       </PublicRoute>
+    ),
+  },
+  {
+    path: "/dashboard",
+    element: (
+      <ProtectedRoute>
+        <DashboardView />
+      </ProtectedRoute>
+    ),
+  },
+  {
+    path: "/dashboard/:spaceId",
+    element: (
+      <ProtectedRoute>
+        <DashboardView />
+      </ProtectedRoute>
+    ),
+  },
+  {
+    path: "/:slug",
+    element: (
+      <Suspense fallback={<LoadingFallback />}>
+        <DocsView />
+      </Suspense>
+    ),
+  },
+  {
+    path: "/:slug/*",
+    element: (
+      <Suspense fallback={<LoadingFallback />}>
+        <DocsView />
+      </Suspense>
     ),
   },
 ];

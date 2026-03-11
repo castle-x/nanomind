@@ -10,6 +10,10 @@ func (h *Hub) registerRoutes(se *core.ServeEvent) {
 	docs.POST("/GetConfig", h.handleGetDocsConfig)
 	docs.POST("/GetPage", h.handleGetDocsPage)
 
+	// Public space endpoint (no auth required)
+	pub := se.Router.Group("/api/spaces/v1")
+	pub.POST("/GetDefaultSpace", h.handleGetDefaultSpace)
+
 	api := se.Router.Group("/api")
 	api.Bind(apis.RequireAuth())
 
@@ -29,4 +33,11 @@ func (h *Hub) registerRoutes(se *core.ServeEvent) {
 	api.POST("/auth/v1/GetSetupStatus", h.handleGetSetupStatus)
 	api.POST("/auth/v1/ChangePassword", h.handleChangePassword)
 	api.POST("/auth/v1/GetAppInfo", h.handleGetAppInfo)
+
+	// Space service
+	api.POST("/spaces/v1/ListSpaces", h.handleListSpaces)
+	api.POST("/spaces/v1/CreateSpace", h.handleCreateSpace)
+	api.POST("/spaces/v1/UpdateSpace", h.handleUpdateSpace)
+	api.POST("/spaces/v1/DeleteSpace", h.handleDeleteSpace)
+	api.POST("/spaces/v1/GetSpace", h.handleGetSpace)
 }

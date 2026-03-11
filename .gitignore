@@ -29,7 +29,7 @@
 
 # GVE runtime
 /.gve/
-
+/.gocache
 # Environment
 .env
 .env.local
@@ -40,6 +40,9 @@
 .vscode/
 *.swp
 *.swo
+
+# Runtime data
+/data/
 
 # OS files
 .DS_Store

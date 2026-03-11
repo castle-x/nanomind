@@ -13,6 +13,7 @@ NanoMind is a self-hosted Markdown note-taking app built as a **single-binary fu
 ```bash
 make install       # pnpm install for frontend
 make dev           # Start backend (:8090) + frontend (:5173) with HMR
+make dev-split     # Backend in background + frontend HMR (auto-restart)
 make dev-backend   # Go backend only (with -tags development)
 make dev-web       # Vite dev server only
 ```
@@ -43,43 +44,47 @@ Always run `pnpm lint` and `pnpm typecheck` after frontend changes.
 
 ### Go Backend (GVE Hub Pattern)
 
-Uses the **GVE Hub pattern**: `internal/hub/` wraps PocketBase's `core.App` via `go-pocketbase`, handlers are Hub methods, business logic is extracted to `internal/service/`.
+Uses the **GVE Hub pattern**: `internal/hub/` wraps PocketBase's `core.App` via `goutils/pocketbase`, handlers are Hub methods, business logic is extracted to `internal/service/`.
 
 - `cmd/server/main.go` — entry point, creates PocketBase instance + Hub
 - `internal/hub/hub.go` — Hub struct wrapping `gopb.AppServer`, OnServe hook
 - `internal/hub/routes.go` — custom API route registration on PocketBase router
 - `internal/hub/file_handlers.go` — file CRUD HTTP handlers (delegate to service)
 - `internal/hub/search_handlers.go` — search HTTP handler
+- `internal/hub/auth_handlers.go` — auth HTTP handlers (current user, setup status, password change)
+- `internal/hub/docs_handlers.go` — public docs HTTP handlers (config, page rendering)
 - `internal/hub/server_production.go` — production: embedded SPA serving
 - `internal/hub/server_development.go` — development: reverse proxy to Vite
-- `internal/service/file_service.go` — pure business logic (file tree, CRUD, search)
+- `internal/service/file_service.go` — file tree, CRUD business logic
+- `internal/service/docs_service.go` — docs rendering and config logic
 - `internal/migrations/initial.go` — initial PocketBase settings and auth config
+- `internal/api/` — generated Go types from Thrift IDL contracts
 - `site/embed.go` — `go:embed` directive embedding `site/dist/`
+- `api/` — Thrift IDL contracts per service (auth, docs, file, search)
 - `gve.lock` — GVE asset version lock file
-- `api/` — API contract documentation (registry.json + per-resource API.md)
 
-**Key dependency**: `github.com/pocketbase/pocketbase` — provides auth, SQLite DB, admin UI, routing. `github.com/castle-x/go-pocketbase` — Hub bootstrapping library.
+**Key dependencies**: `github.com/pocketbase/pocketbase` — provides auth, SQLite DB, admin UI, routing. `github.com/castle-x/goutils/pocketbase` — Hub bootstrapping library.
 
 ### React Frontend (`site/`)
 
 Follows **Feature-Sliced Design (FSD)** architecture:
 
 - `src/app/` — initialization: routes (lazy-loaded), providers (React Query, theme), global styles
-- `src/views/` — page components (`auth/LoginView.tsx`, `editor/EditorView.tsx` and its sub-components)
-- `src/widgets/` — reusable business components (editor, file-tree, search, toolbar, toc)
-- `src/entities/` — domain entities (planned)
+- `src/views/` — page components (`auth/`, `editor/`, `docs/`)
 - `src/shared/` — infrastructure with no business logic:
-  - `api/client.ts` — HTTP client (Ky) with PocketBase token injection
-  - `hooks/` — custom hooks (e.g., `useAuth`)
+  - `lib/api-client.ts` — HTTP client (Ky) with PocketBase token injection
   - `lib/pb-client.ts` — PocketBase JS SDK client (`new PocketBase("/")`)
-  - `store/app-store.ts` — Zustand global store
+  - `hooks/useAuth.ts` — Zustand-based auth store + hook
+  - `hooks/use-theme.ts` — theme hook
+  - `docs/` — docs page components (sidebar, topbar, channel bar, shell)
   - `types/` — shared TypeScript types
   - `ui/` — Shadcn components (keep unmodified; customize via CSS variables only)
+- `src/api/` — generated TypeScript API clients from Thrift IDL
 
 ### State Management Hierarchy
 
 - Server state → **TanStack Query** (caching, auto-refresh)
-- Global client state → **Zustand** (theme, user)
+- Global client state → **Zustand** (theme, auth)
 - Local state → `useState`/`useReducer` (forms, dialogs)
 - Do not use React Context for frequently changing data
 
@@ -88,10 +93,56 @@ Follows **Feature-Sliced Design (FSD)** architecture:
 ```
 Browser → PocketBase Router
   ├── /api/collections/* → PocketBase built-in (auth, CRUD)
-  ├── /api/files|search|auth → Custom handlers (with apis.RequireAuth())
+  ├── /api/{service}/v1/{Method} → Custom RPC handlers (POST, with apis.RequireAuth())
+  ├── /api/docs/v1/* → Public docs handlers (no auth required)
   ├── /_/ → PocketBase Admin UI
   └── /* → Embedded SPA (production) or Vite proxy (development)
 ```
+
+## API Endpoints
+
+All custom endpoints use **RPC-style POST** with versioned paths:
+
+### File service (auth required)
+
+| Endpoint | Description |
+|----------|-------------|
+| `POST /api/files/v1/GetTree` | List file tree |
+| `POST /api/files/v1/GetFile` | Read file |
+| `POST /api/files/v1/SaveFile` | Save file |
+| `POST /api/files/v1/CreateFile` | Create file/directory |
+| `POST /api/files/v1/DeleteFile` | Delete file/directory |
+| `POST /api/files/v1/RenameFile` | Rename file/directory |
+
+### Search service (auth required)
+
+| Endpoint | Description |
+|----------|-------------|
+| `POST /api/search/v1/Search` | Full-text search |
+
+### Auth service (auth required)
+
+| Endpoint | Description |
+|----------|-------------|
+| `POST /api/auth/v1/GetCurrentUser` | Current user info |
+| `POST /api/auth/v1/GetSetupStatus` | Check setup status |
+| `POST /api/auth/v1/ChangePassword` | Change password |
+| `POST /api/auth/v1/GetAppInfo` | App info |
+
+### Docs service (public, no auth)
+
+| Endpoint | Description |
+|----------|-------------|
+| `POST /api/docs/v1/GetConfig` | Get docs site config |
+| `POST /api/docs/v1/GetPage` | Get rendered docs page |
+
+### PocketBase built-in
+
+| Endpoint | Description |
+|----------|-------------|
+| `POST /api/collections/users/auth-with-password` | Login |
+| `POST /api/collections/users/auth-refresh` | Refresh token |
+| `GET /_/` | Admin UI |
 
 ## Code Style
 
@@ -99,14 +150,14 @@ Browser → PocketBase Router
 
 - `gofmt` formatting
 - GVE Hub pattern: `internal/hub/` contains Hub struct + HTTP handlers, `internal/service/` contains business logic
-- PocketBase + go-pocketbase are the external dependencies
+- PocketBase + goutils/pocketbase are the external dependencies
 - Use `apis.RequireAuth()` for protected routes, access `e.Auth` for current user
 - Build tags: `//go:build development` / `//go:build !development` for dev/prod separation
 
 ### TypeScript/React
 
 - **Strict mode** with all strict options enabled; no `any` (use `unknown` + type guards)
-- **Path aliases**: use `@/` (maps to `src/`), `@/shared/`, `@/views/`, `@/widgets/`, `@/entities/`, `@/app/`; max 2 levels of `../`
+- **Path aliases**: use `@/` (maps to `src/`), `@/shared/`, `@/views/`, `@/app/`; max 2 levels of `../`
 - **Biome**: 2-space indent, 100 char line width, double quotes, always semicolons, trailing commas on all
 - **Components**: PascalCase filenames, regular functions (not `React.FC`), extract props as `interface Props`
 - **Shadcn UI components** in `shared/ui/` — do not modify directly; theme via CSS variables in `src/app/styles/themes.css`
@@ -115,36 +166,13 @@ Browser → PocketBase Router
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `DATA_DIR` | `nanomind_data` | PocketBase data directory (contains DB, logs, memos) |
+| `DATA_DIR` | `~/.nanomind` | PocketBase data directory (contains DB, logs, memos) |
 | `MIND_PATH` | `{DATA_DIR}/mind` | Markdown file storage directory |
 | `ENV` | (empty) | Set to `dev` for development mode + auto-migrations |
 
 Run with: `./nanomind serve --http=localhost:8090`
 
 PocketBase Admin UI available at `http://localhost:8090/_/`
-
-## API Endpoints
-
-### Custom (file operations)
-
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| GET | `/api/files` | List file tree |
-| POST | `/api/files` | Create file/directory |
-| GET | `/api/files/{path}` | Read file |
-| PUT | `/api/files/{path}` | Save file |
-| PATCH | `/api/files/{path}` | Rename file/directory |
-| DELETE | `/api/files/{path}` | Delete file/directory |
-| GET | `/api/search?q={query}` | Full-text search |
-| GET | `/api/auth/me` | Current user info |
-
-### PocketBase built-in
-
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| POST | `/api/collections/users/auth-with-password` | Login |
-| POST | `/api/collections/users/auth-refresh` | Refresh token |
-| GET | `/_/` | Admin UI |
 
 ## Key Constraints
 

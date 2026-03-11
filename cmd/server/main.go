@@ -6,7 +6,7 @@ import (
 	"path/filepath"
 
 	"nanomind/internal/hub"
-	_ "nanomind/internal/migrations"
+	_ "nanomind/internal/setup"
 
 	"github.com/pocketbase/pocketbase"
 	"github.com/pocketbase/pocketbase/plugins/migratecmd"
@@ -22,7 +22,7 @@ func main() {
 
 	migratecmd.MustRegister(app, app.RootCmd, migratecmd.Config{
 		Automigrate: isDev,
-		Dir:         "internal/migrations",
+		Dir:         "internal/setup",
 	})
 
 	h := hub.New(app)

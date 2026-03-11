@@ -1,9 +1,9 @@
 import { List } from "lucide-react";
 import { cn } from "@/shared/lib/utils";
-import type { DocsTocItem } from "@/shared/types";
+import type { TocItem } from "@/shared/types";
 
 interface Props {
-  items: DocsTocItem[];
+  items: TocItem[];
   visible: boolean;
   activeId?: string | null;
 }

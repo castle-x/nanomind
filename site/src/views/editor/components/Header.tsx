@@ -1,5 +1,6 @@
-import { LogOut, Moon, Palette, Pencil, Save, Settings, Sun, X } from "lucide-react";
+import { ArrowLeft, LogOut, Moon, Palette, Pencil, Save, Settings, Sun, X } from "lucide-react";
 import { useEffect, useState } from "react";
+import { Link } from "react-router";
 import { useThemeStore } from "@/shared/hooks/use-theme";
 import { useAuth } from "@/shared/hooks/useAuth";
 import { getAppInfo } from "@/shared/lib/api-client";
@@ -44,6 +45,15 @@ export function Header({ onSave, onToggleEdit, onCancelEdit }: HeaderProps) {
     <header className="h-11 border-b border-border flex items-center justify-between px-4 shrink-0">
       {/* Left: mind path + breadcrumb */}
       <div className="flex items-center gap-2 text-sm min-w-0">
+        <Link
+          to="/"
+          className="p-1.5 rounded-md hover:bg-accent transition-colors text-muted-foreground hover:text-foreground"
+          title="返回文档首页"
+        >
+          <ArrowLeft className="w-4 h-4" />
+        </Link>
+        <div className="w-px h-4 bg-border/60 mx-1" />
+
         {mindPath && (
           <span
             className="text-muted-foreground/60 text-xs font-mono truncate"

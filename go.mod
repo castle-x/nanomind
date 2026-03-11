@@ -3,12 +3,10 @@ module nanomind
 go 1.25.6
 
 require (
-	github.com/apache/thrift v0.14.2
-	github.com/castle-x/go-pocketbase v0.0.0
+	github.com/castle-x/goutils/pocketbase v0.1.0
 	github.com/pocketbase/pocketbase v0.36.5
+	gopkg.in/yaml.v3 v3.0.1
 )
-
-replace github.com/castle-x/go-pocketbase => ../go-pocketbase
 
 require (
 	github.com/asaskevich/govalidator v0.0.0-20230301143203-a9d515a09cc2 // indirect
@@ -27,7 +25,6 @@ require (
 	github.com/ncruces/go-strftime v1.0.0 // indirect
 	github.com/pocketbase/dbx v1.12.0 // indirect
 	github.com/remyoudompheng/bigfft v0.0.0-20230129092748-24d4a6f8daec // indirect
-	github.com/russross/blackfriday/v2 v2.1.0 // indirect
 	github.com/spf13/cast v1.10.0 // indirect
 	github.com/spf13/cobra v1.10.2 // indirect
 	github.com/spf13/pflag v1.0.10 // indirect
@@ -39,7 +36,6 @@ require (
 	golang.org/x/sync v0.19.0 // indirect
 	golang.org/x/sys v0.41.0 // indirect
 	golang.org/x/text v0.34.0 // indirect
-	gopkg.in/yaml.v3 v3.0.1 // indirect
 	modernc.org/libc v1.67.6 // indirect
 	modernc.org/mathutil v1.7.1 // indirect
 	modernc.org/memory v1.11.0 // indirect

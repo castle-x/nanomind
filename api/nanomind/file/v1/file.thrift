@@ -13,28 +13,37 @@ struct FileContentResponse {
   2: string path
 }
 
+struct GetTreeRequest {
+  1: required string spaceId
+}
+
 struct GetFileRequest {
-  1: required string path
+  1: required string spaceId
+  2: required string path
 }
 
 struct SaveFileRequest {
-  1: required string path
-  2: required string content
+  1: required string spaceId
+  2: required string path
+  3: required string content
 }
 
 struct CreateFileRequest {
-  1: required string path
-  2: required string type
-  3: required string name
+  1: required string spaceId
+  2: required string path
+  3: required string type
+  4: required string name
 }
 
 struct DeleteFileRequest {
-  1: required string path
+  1: required string spaceId
+  2: required string path
 }
 
 struct RenameFileRequest {
-  1: required string path
-  2: required string new_name
+  1: required string spaceId
+  2: required string path
+  3: required string new_name
 }
 
 struct MutationResponse {
@@ -43,7 +52,7 @@ struct MutationResponse {
 }
 
 service FileService {
-  list<FileTreeItem> GetTree()
+  list<FileTreeItem> GetTree(1: GetTreeRequest req)
   FileContentResponse GetFile(1: GetFileRequest req)
   MutationResponse SaveFile(1: SaveFileRequest req)
   MutationResponse CreateFile(1: CreateFileRequest req)

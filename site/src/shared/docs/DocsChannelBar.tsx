@@ -15,29 +15,28 @@ export function DocsChannelBar({ config, activeTabKey }: Props) {
 
   return (
     <div className="sticky top-14 z-30 border-b border-border/60 bg-background/86 backdrop-blur-xl">
-      <div className="mx-auto flex h-12 max-w-[1600px] items-center gap-2 px-4 lg:px-6">
+      <div className="flex h-12 w-full items-center gap-6 px-4 lg:px-6">
         {config.tabs.map((tab) => {
           const firstPageId = findFirstPageId(tab);
           const href = firstPageId
             ? firstPageId === config.site.homepage
-              ? "/docs"
-              : `/docs/${firstPageId}`
-            : "/docs";
+              ? "/"
+              : `/${firstPageId}`
+            : "/";
+
+          const isActive = activeTabKey === tab.key;
 
           return (
             <NavLink
               key={tab.key}
               to={href}
-              className={({ isActive }) =>
-                cn(
-                  "inline-flex h-8 items-center rounded-full border px-3 text-sm transition-colors",
-                  isActive || activeTabKey === tab.key
-                    ? "border-foreground bg-foreground text-background"
-                    : "border-transparent text-muted-foreground hover:border-border hover:bg-accent/70 hover:text-foreground",
-                )
-              }
+              className={cn(
+                "relative flex h-full items-center text-sm font-medium transition-colors",
+                isActive ? "text-foreground" : "text-muted-foreground hover:text-foreground",
+              )}
             >
               {tab.label}
+              {isActive && <span className="absolute inset-x-0 bottom-0 h-[2px] bg-foreground" />}
             </NavLink>
           );
         })}
